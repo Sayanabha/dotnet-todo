@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>dotnet todo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d0f;
+      --card: #16161a;
+      --border: #2a2a30;
+      --accent: #7c3aed;
+      --accent2: #a78bfa;
+      --accent3: #06b6d4;
+      --text: #e8e8f0;
+      --muted: #5a5a6e;
+      --done: #3a3a46;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 60px 20px 80px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(124,58,237,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124,58,237,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Glow orbs */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -200px;
+      left: -200px;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .orb2 {
+      position: fixed;
+      bottom: -150px;
+      right: -150px;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(6,182,212,0.08) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 720px;
+    }
+
+    header {
+      margin-bottom: 48px;
+      animation: fadeDown 0.7s ease both;
+    }
+
+    .eyebrow {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .eyebrow::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, var(--accent), transparent);
+    }
+
+    h1 {
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    h1 span.dot {
+      color: var(--accent);
+    }
+
+    h1 span.net {
+      color: var(--accent3);
+    }
+
+    .subtitle {
+      margin-top: 12px;
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .progress-bar-wrap {
+      background: var(--border);
+      border-radius: 999px;
+      height: 4px;
+      margin: 28px 0 36px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(to right, var(--accent), var(--accent3));
+      border-radius: 999px;
+      transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+      width: 0%;
+    }
+
+    .progress-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .progress-label span:last-child {
+      color: var(--accent2);
+    }
+
+    /* Category headers */
+    .category {
+      margin-bottom: 32px;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    .category:nth-child(1) { animation-delay: 0.1s; }
+    .category:nth-child(2) { animation-delay: 0.2s; }
+    .category:nth-child(3) { animation-delay: 0.3s; }
+    .category:nth-child(4) { animation-delay: 0.4s; }
+    .category:nth-child(5) { animation-delay: 0.5s; }
+
+    .category-title {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+      padding-left: 4px;
+    }
+
+    .todo-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 18px 20px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: border-color 0.25s, background 0.25s, transform 0.2s;
+      user-select: none;
+    }
+
+    .todo-item:hover {
+      border-color: var(--accent);
+      background: #1c1c22;
+      transform: translateX(3px);
+    }
+
+    .todo-item.checked {
+      background: var(--done);
+      border-color: transparent;
+      opacity: 0.55;
+    }
+
+    .todo-item.checked:hover {
+      opacity: 0.75;
+      transform: translateX(3px);
+    }
+
+    /* Custom checkbox */
+    .cb-wrap {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      margin-top: 2px;
+    }
+
+    .cb-wrap input[type="checkbox"] {
+      display: none;
+    }
+
+    .cb-box {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border);
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.2s, background 0.2s;
+      background: transparent;
+    }
+
+    .todo-item:hover .cb-box {
+      border-color: var(--accent);
+    }
+
+    input[type="checkbox"]:checked + .cb-box {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .cb-check {
+      display: none;
+      color: white;
+      font-size: 11px;
+    }
+
+    input[type="checkbox"]:checked + .cb-box .cb-check {
+      display: block;
+    }
+
+    .todo-content {
+      flex: 1;
+    }
+
+    .todo-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.3;
+      transition: color 0.2s;
+    }
+
+    .todo-item.checked .todo-title {
+      text-decoration: line-through;
+      color: var(--muted);
+    }
+
+    .todo-desc {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 5px;
+      line-height: 1.5;
+    }
+
+    .tag {
+      display: inline-block;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-top: 8px;
+      border: 1px solid;
+    }
+
+    .tag-purple { color: var(--accent2); border-color: rgba(167,139,250,0.3); background: rgba(124,58,237,0.08); }
+    .tag-cyan   { color: var(--accent3); border-color: rgba(6,182,212,0.3);  background: rgba(6,182,212,0.06); }
+    .tag-green  { color: #4ade80;        border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.06); }
+    .tag-orange { color: #fb923c;        border-color: rgba(251,146,60,0.3); background: rgba(251,146,60,0.06); }
+
+    /* Animations */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .stats-bar {
+      display: flex;
+      gap: 24px;
+      margin-top: 40px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .stat span {
+      display: block;
+      font-size: 22px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .stat span.accent { color: var(--accent2); }
+    .stat span.cyan   { color: var(--accent3); }
+  </style>
+</head>
+<body>
+
+<div class="orb2"></div>
+
+<div class="container">
+  <header>
+    <div class="eyebrow">build list</div>
+    <h1><span class="dot">.</span><span class="net">NET</span> todo</h1>
+    <p class="subtitle">// full-stack webapp project ideas</p>
+  </header>
+
+  <div>
+    <div class="progress-label">
+      <span>progress</span>
+      <span id="progressText">0 / 14 completed</span>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+  </div>
+
+  <!-- Category 1 -->
+  <div class="category">
+    <div class="category-title">// productivity & business</div>
+
+    <label class="todo-item" onclick="toggle(this)">
+      <div class="cb-wrap">
+        <input type="checkbox"/>
+        <div class="cb-box"><span class="cb-check">✓</span></div>
+      </div>
+      <div class="todo-content">
+        <div class="todo-title">Smart Invoice & Subscription Manager</div>
+        <div class="todo-desc">Recurring billing, PDF reports, anomaly flagging, Hangfire background jobs</div>
+        <span class="tag tag-purple">ASP.NET Core + React</span>
+        <span class="tag tag-cyan">PostgreSQL</span>
+      </div>
+    </label>
+
+    <label class="todo-item" onclick="toggle(this)">
+      <div class="cb-wrap">
+        <input type="checkbox"/>
+        <div class="cb-box"><span class="cb-check">✓</span></div>
+      </div>
+      <div class="todo-content">
+        <div class="todo-title">Internal Wiki / Knowledge Base with AI Search</div>
+        <div class="todo-desc">Self-hosted Notion alternative with full-text search, version history, SignalR live collab</div>
+        <span class="tag tag-purple">Blazor Server</span>
+        <span class="tag tag-cyan">Elasticsearch</span>
+      </div>
+    </label>
+
+    <label class="todo-item" onclick="toggle(this)">
+      <div class="cb-wrap">
+        <input type="checkbox"/>
+        <div class="cb-box"><span class="cb-check">✓</span></div>
+      </div>
+      <div class="todo-content">
+        <div class="todo-title">Meeting Cost Calculator & Tracker</div>
+        <div class="todo-desc">Calculates real cost per meeting by attendee salaries, tracks recurring waste over time</div>
+        <span class="tag tag-green">ASP.NET Core + React</span>
+        <span class="tag tag-orange">Chart.js</span>
+      </div>
+    </label>
+  </div>
+
+  <!-- Category 2 -->
+  <div class="category">
+    <div class="category-title">// developer tools</div>
+
+    <label class="todo-item" onclick="toggle(this)">
+      <div class="cb-wrap">
+        <input type="checkbox"/>
+        <div class="cb-box"><span class="cb-check">✓</span></div>
+      </div>
+      <div class="todo-content">
+        <div class="todo-title">API Mocking & Contract Testing Platform</div>
+        <div class="todo-desc">Define API contracts, mock responses, run contract tests with a polished UI</div>
+        <span class="tag tag-purple">ASP.NET Core + React</span>
+        <span class="tag tag-cyan">SQLite + Docker</span>
+      </div>
+    </label>
+
+    <label class="todo-item" onclick="toggle(this)">
+      <div class="cb-wrap">
+        <input type="checkbox"/>
+        <div class="cb-box"><span class="cb-check">✓</span></div>
+      </div>
+      <div class="todo-content">
+        <div class="todo-title">Database Schema Visualizer & Change Tracker</div>
+        <div class="todo-desc">Auto ER diagrams, diff schemas across environments, track EF Core migrations over time</div>
+        <span class="tag tag-green">ASP.NET Core</span>
+        <span class="tag tag-orange">React Flow + EF Core</span>
+      </div>
+    </label>
+
+    <label class="todo-item" onclick="toggle(this)">
+      <div class="cb-wrap">
+        <input type="checkbox"/>
+        <div class="cb-box"><span class="cb-check">✓</span></div>
+      </div>
+      <div class="todo-content">
+        <div class="todo-title">Multi-environment Config Manager</div>
+        <div class="todo-desc">Self-hosted alt to AWS Parameter Store — secret masking, audit logs, change history</div>
+        <span class="tag tag-purple">Blazor + SQL Server</span>
+        <span class="tag tag-cyan">Azure Key Vault</span>
+      </div>
+    </label>
+  </div>
+
+  <!-- Category 3 -->
+  <div class="category">
+    <div class="category-title">// health & personal</div>
+
+    <label class="todo-item" onclick="toggle(this)">
+      <div class="cb-wrap">
+        <input type="checkbox"/>
+        <div class="cb-box"><span class="cb-check">✓</span></div>
+      </div>
+      <div class="todo-content">
+        <div class="todo-title">Habit & Goal Tracker with Streaks & Analytics</div>
+        <div class="todo-desc">Correlates habits with mood/energy, shows trend lines and meta goals</div>
+        <span class="tag tag-green">ASP.NET Core + React</span>
+        <span class="tag tag-orange">D3.js + SQLite</span>
+      </div>
+    </label>
+
+    <label class="todo-item" onclick="toggle(this)">
+      <div class="cb-wrap">
+        <input type="checkbox"/>
+        <div class="cb-box"><span class="cb-check">✓</span></div>
+      </div>
+      <div class="todo-content">
+        <div class="todo-title">Personal Finance Dashboard</div>
+        <div class="todo-desc">Aggregates bank CSV/OFX exports, auto-categorizes via ML.NET, visualizes spending trends</div>
+        <span class="tag tag-purple">ASP.NET Core + React</span>
+        <span class="tag tag-cyan">ML.NET + PostgreSQL</span>
+      </div>
+    </label>
+
+    <label class="todo-item" onclick="toggle(this)">
+      <div class="cb-wrap">
+        <input type="checkbox"/>
+        <div class="cb-box"><span class="cb-check">✓</span></div>
+      </div>
+      <div class="todo-content">
+        <div class="todo-title">Medication & Health Log Tracker</div>
+        <div class="todo-desc">Logs medications, symptoms, vitals, doctor notes with charts. Great for chronic illness</div>
+        <span class="tag tag-green">Blazor WASM</span>
+        <span class="tag tag-orange">Chart.js + SQLite</span>
+      </div>
+    </label>
+  </div>
+
+  <!-- Category 4 -->
+  <div class="category">
+    <div class="category-title">// niche high-value</div>
+
+    <label class="todo-item" onclick="toggle(this)">
+      <div class="cb-wrap">
+        <input type="checkbox"/>
+        <div class="cb-box"><span class="cb-check">✓</span></div>
+      </div>
+      <div class="todo-content">
+        <div class="todo-title">Interview Question Bank & Hiring Pipeline</div>
+        <div class="todo-desc">Collaborative question banks by role, structured scoring, live interview notes via SignalR</div>
+        <span class="tag tag-purple">ASP.NET Core + React</span>
+        <span class="tag tag-cyan">SQL Server + SignalR</span>
+      </div>
+    </label>
+
+    <label class="todo-item" onclick="toggle(this)">
+      <div class="cb-wrap">
+        <input type="checkbox"/>
+        <div class="cb-box"><span class="cb-check">✓</span></div>
+      </div>
+      <div class="todo-content">
+        <div class="todo-title">Incident Post-Mortem Manager</div>
+        <div class="todo-desc">Tracks outages, timelines, contributing factors, generates shareable markdown docs</div>
+        <span class="tag tag-green">Blazor + PostgreSQL</span>
+        <span class="tag tag-orange">Markdown rendering</span>
+      </div>
+    </label>
+
+    <label class="todo-item" onclick="toggle(this)">
+      <div class="cb-wrap">
+        <input type="checkbox"/>
+        <div class="cb-box"><span class="cb-check">✓</span></div>
+      </div>
+      <div class="todo-content">
+        <div class="todo-title">Equipment / Asset Maintenance Tracker</div>
+        <div class="todo-desc">Service history, preventive maintenance scheduling, alerts via Hangfire for small businesses</div>
+        <span class="tag tag-purple">ASP.NET Core + React</span>
+        <span class="tag tag-cyan">Bootstrap + SQL Server</span>
+      </div>
+    </label>
+
+    <label class="todo-item" onclick="toggle(this)">
+      <div class="cb-wrap">
+        <input type="checkbox"/>
+        <div class="cb-box"><span class="cb-check">✓</span></div>
+      </div>
+      <div class="todo-content">
+        <div class="todo-title">Self-hosted URL Shortener with Analytics</div>
+        <div class="todo-desc">Click heatmaps by country/device, UTM tracking, expiry rules — better than Bitly internally</div>
+        <span class="tag tag-green">ASP.NET Core + React</span>
+        <span class="tag tag-orange">Redis + PostgreSQL</span>
+      </div>
+    </label>
+
+    <label class="todo-item" onclick="toggle(this)">
+      <div class="cb-wrap">
+        <input type="checkbox"/>
+        <div class="cb-box"><span class="cb-check">✓</span></div>
+      </div>
+      <div class="todo-content">
+        <div class="todo-title">Recipe & Meal Planner with Grocery List Generator</div>
+        <div class="todo-desc">Weekly meal planner, pantry inventory, auto shopping list, recipe scaling</div>
+        <span class="tag tag-purple">Blazor WASM</span>
+        <span class="tag tag-cyan">SQL Server</span>
+      </div>
+    </label>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat"><span class="accent" id="statDone">0</span>completed</div>
+    <div class="stat"><span class="cyan" id="statLeft">14</span>remaining</div>
+    <div class="stat"><span id="statPct">0%</span>done</div>
+  </div>
+</div>
+
+<script>
+  const TOTAL = 14;
+
+  function toggle(label) {
+    const cb = label.querySelector('input[type="checkbox"]');
+    cb.checked = !cb.checked;
+    label.classList.toggle('checked', cb.checked);
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const checked = document.querySelectorAll('input[type="checkbox"]:checked').length;
+    const pct = Math.round((checked / TOTAL) * 100);
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressText').textContent = `${checked} / ${TOTAL} completed`;
+    document.getElementById('statDone').textContent = checked;
+    document.getElementById('statLeft').textContent = TOTAL - checked;
+    document.getElementById('statPct').textContent = pct + '%';
+  }
+</script>
+
+</body>
+</html>
